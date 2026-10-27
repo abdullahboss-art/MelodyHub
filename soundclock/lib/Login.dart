@@ -413,7 +413,7 @@ class _LoginPageState extends State<LoginPage> {
                                     style: TextStyle(color: Colors.white),
                                   ),
                                   TextSpan(
-                                    text: 'Clock',
+                                    text: 'Aura',
                                     style: TextStyle(color: Color(0xFF9DA8FF)),
                                   ),
                                 ],

@@ -90,12 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Song> _indian = [];
   List<List<Song>> _lists = [];
 
-  // Latest videos (Bollywood / Pakistani tabs)
-  LatestMusic? _latest;
-  bool _latestLoading = false;
-  String? _latestError;
-  int _latestTab = 0; // 0 = Bollywood, 1 = Pakistani
-
   // Latest audio songs (Bollywood / Pakistani / English tabs)
   LatestAudio? _latestAudio;
   bool _latestAudioLoading = false;
@@ -188,8 +182,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _error = null;
     });
 
-    // YouTube latest videos alag se load hoti hain.
-    _loadLatestVideos();
     _loadLatestAudio();
 
     try {
@@ -321,37 +313,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
       ],
     );
-  }
-
-  Future<void> _loadLatestVideos() async {
-    if (mounted) {
-      setState(() {
-        _latestLoading = true;
-        _latestError = null;
-      });
-    }
-
-    try {
-      final data = await YouTubeMusicService.instance.fetchLatestMusic();
-
-      if (!mounted) return;
-
-      setState(() {
-        _latest = data;
-        _latestLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _latestLoading = false;
-        _latestError = e is YouTubeApiException
-            ? e.message
-            : 'YouTube videos load nahi huin. Internet check karein.';
-      });
-
-      debugPrint('YouTube latest error: $e');
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -759,191 +720,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // YOUTUBE VIDEO CARD
-  // ---------------------------------------------------------------------------
-
-  Widget _youtubeCard(List<YouTubeSong> list, int i) {
-    final video = list[i];
-
-    return GestureDetector(
-      onTap: () => _openYouTubeVideo(list, i),
-      child: SizedBox(
-        width: 180,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    video.thumbnailUrl,
-                    width: 180,
-                    height: 105,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 180,
-                      height: 105,
-                      color: SC.cardBg,
-                      child: Icon(
-                        Icons.music_video_rounded,
-                        color: _purple,
-                        size: 36,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _purple,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: _purple.withAlpha(120),
-                            blurRadius: 12,
-                          ),
-                        ],
-                      ),
-                      padding: EdgeInsets.all(7),
-                      child: Icon(
-                        Icons.play_arrow_rounded,
-                        color: _onPurple,
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Text(
-              video.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: 3),
-            Text(
-              video.channel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: _purple, fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tabChip(String label, int tab) {
-    final selected = _latestTab == tab;
-
-    return Padding(
-      padding: EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => setState(() => _latestTab = tab),
-        selectedColor: _purple,
-        backgroundColor: SC.cardBg,
-        side: BorderSide(color: _purple),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        labelStyle: TextStyle(
-          color: selected ? _onPurple : _white,
-          fontWeight: FontWeight.w700,
-        ),
-        showCheckmark: false,
-      ),
-    );
-  }
-
-  Widget _latestSection() {
-    final videos = _latestTab == 0
-        ? (_latest?.bollywood ?? <YouTubeSong>[])
-        : (_latest?.pakistani ?? <YouTubeSong>[]);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: 4),
-                child: Text(
-                  'Latest Music Videos',
-                  style: TextStyle(
-                    color: _purple,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              tooltip: 'Videos refresh karein',
-              onPressed: _latestLoading ? null : _loadLatestVideos,
-              icon: Icon(Icons.refresh_rounded, color: _purple, size: 22),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            _tabChip('Bollywood', 0),
-            _tabChip('Pakistani', 1),
-          ],
-        ),
-        SizedBox(height: 14),
-        if (_latestLoading)
-          Center(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: CircularProgressIndicator(color: _purple),
-            ),
-          )
-        else if (_latestError != null)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _latestError!,
-                style: TextStyle(color: _white, height: 1.4),
-              ),
-              TextButton(
-                onPressed: _loadLatestVideos,
-                child: Text(
-                  'Dobara try karein',
-                  style: TextStyle(color: _purple),
-                ),
-              ),
-            ],
-          )
-        else if (videos.isEmpty)
-          Text(
-            'Abhi koi video nahi mili.',
-            style: TextStyle(color: _white),
-          )
-        else
-          SizedBox(
-            height: 190,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: videos.length,
-              separatorBuilder: (_, __) => SizedBox(width: 14),
-              itemBuilder: (_, i) => _youtubeCard(videos, i),
-            ),
-          ),
-      ],
     );
   }
 
@@ -1530,10 +1306,8 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(height: 28),
         ],
 
-        // Latest audio + videos, Audius/iTunes loading se independent.
+        // Latest audio, Audius/iTunes loading se independent.
         _latestAudioSection(),
-        SizedBox(height: 28),
-        _latestSection(),
       ],
     );
   }
